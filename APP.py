@@ -6,15 +6,12 @@ import joblib
 from scipy.stats import boxcox
 
 # ========== 1. 加载模型和预处理器 ==========
-# 注意根据你实际存放位置调整路径
-base_path = r"D:\1Study\ML\TEST ALL\true fig\web部署\从模型构建到在线部署：基于Stacking集成模型的全流程实现与SHAP可视化\Github上传"
-
-model_path        = f"{base_path}\\stacking_model.pkl"
-qt_lcd_path       = f"{base_path}\\qt_lcd.pkl"
-qt_gsa_path       = f"{base_path}\\qt_GSA.pkl"
-qt_density_path   = f"{base_path}\\qt_Density.pkl"
-qt_ktol_path      = f"{base_path}\\qt_Ktoluene.pkl"
-lambda_vf_path    = f"{base_path}\\lambda_vf.pkl"
+model_path        = "stacking_model.pkl"
+qt_lcd_path       = "qt_lcd.pkl"
+qt_gsa_path       = "qt_GSA.pkl"
+qt_density_path   = "qt_Density.pkl"
+qt_ktol_path      = "qt_Ktoluene.pkl"
+lambda_vf_path    = "lambda_vf.pkl"
 
 stacking_regressor = joblib.load(model_path)
 qt_lcd             = joblib.load(qt_lcd_path)
