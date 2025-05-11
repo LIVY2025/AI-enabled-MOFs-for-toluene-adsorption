@@ -51,8 +51,8 @@ if predict_button:
         density_q = qt_density.transform( np.array([[Density]]) )
         ktol_q    = qt_ktol.transform(    np.array([[Ktoluene]]) )
 
-        # Box–Cox 变换
-        vf_bc, _  = boxcox(np.array([Vf]), lmbda=boxcox_lambda_vf)
+        # Box–Cox 变换（scipy.stats.boxcox 仅返回 transformed array）
+        vf_bc = boxcox(np.array([Vf]), lmbda=boxcox_lambda_vf)
 
         # ---- 4.2 拼接成模型输入，顺序必须与训练时一致 ----
         # 假设训练时特征顺序是 [LCD, Vf, GSA, Density, Ktoluene]
