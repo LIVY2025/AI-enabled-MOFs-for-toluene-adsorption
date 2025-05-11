@@ -4,6 +4,7 @@ import pandas as pd
 from PIL import Image
 import joblib
 from scipy.stats import boxcox
+import dill
 
 # ========== 1. 加载模型和预处理器 ==========
 
