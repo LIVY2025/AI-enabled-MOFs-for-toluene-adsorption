@@ -49,8 +49,11 @@ if predict_button:
         gsa_q     = float(qt_gsa.transform([[GSA]])[0, 0])
         density_q = float(qt_density.transform([[Density]])[0, 0])
         # 强制转换为 float 类型，确保 boxcox 支持
-        vf_bc     = boxcox(np.array([float(Vf)], dtype=float), lmbda=boxcox_lambda_vf)[0]
-        ktol_bc   = boxcox(np.array([float(Ktoluene)], dtype=float), lmbda=boxcox_lambda_kt)[0]
+        vf_arr = np.array([float(Vf)], dtype=float)
+        ktol_arr = np.array([float(Ktoluene)], dtype=float)
+
+        vf_bc = boxcox(vf_arr, lmbda=float(boxcox_lambda_vf))[0]
+        ktol_bc = boxcox(ktol_arr, lmbda=float(boxcox_lambda_kt))[0]
 
         # ----- 显示输入特征原始 vs 转换后 -----
         df_trans = pd.DataFrame({
