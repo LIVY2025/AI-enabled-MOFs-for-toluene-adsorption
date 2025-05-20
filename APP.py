@@ -54,16 +54,33 @@ if predict_button:
         # Box–Cox 变换（scipy.stats.boxcox 仅返回 transformed array）
         vf_bc = boxcox(np.array([Vf]), lmbda=boxcox_lambda_vf)
 
-        # ---- 4.2 拼接成模型输入，顺序必须与训练时一致 ----
+        # ---- 4.2 显示转换前/后数值 ----
+        transformed_dict = {
+            "特征": ["LCD", "Vf", "GSA", "Density", "Ktoluene"],
+            "原始值": [LCD, Vf, GSA, Density, Ktoluene],
+            "转换后值": [
+                float(lcd_q[0, 0]),
+                float(vf_bc[0]),
+                float(gsa_q[0, 0]),
+                float(density_q[0, 0]),
+                float(ktol_q[0, 0])
+            ]
+        }
+        df_trans = pd.DataFrame(transformed_dict)
+        st.subheader("🔄 特征值转换对比")
+        st.table(df_trans)
+
+        # ---- 4.3 拼接成模型输入，顺序必须与训练时一致 ----
         # 假设训练时特征顺序是 [LCD, Vf, GSA, Density, Ktoluene]
         X_user = np.concatenate(
             [lcd_q, vf_bc.reshape(-1,1), gsa_q, density_q, ktol_q],
             axis=1
         )
 
-        # ---- 4.3 预测并展示 ----
+        # ---- 4.4 预测并展示 ----
         prediction = stacking_regressor.predict(X_user)[0]
-        st.success(f"预测结果：{prediction:.4f}")
+        st.subheader("📈 预测结果")
+        st.success(f"预测TSN = {prediction:.4f}")
 
     except Exception as e:
         st.error(f"预测时发生错误：{e}")
