@@ -12,20 +12,19 @@ model_path        = "stacking_model.pkl"
 qt_lcd_path       = "qt_lcd.pkl"
 qt_gsa_path       = "qt_GSA.pkl"
 qt_density_path   = "qt_Density.pkl"
-qt_ktol_path      = "qt_Ktoluene.pkl"
+lambda_kt_path      = "lambda_Ktoluene.pkl"
 lambda_vf_path    = "lambda_vf.pkl"
+qt_TSN_path       = "qt_TSN.pkl"
 
 stacking_regressor = joblib.load(model_path)
 qt_lcd             = joblib.load(qt_lcd_path)
 qt_gsa             = joblib.load(qt_gsa_path)
 qt_density         = joblib.load(qt_density_path)
-qt_ktol            = joblib.load(qt_ktol_path)
+boxcox_lambda_kt   = joblib.load(lambda_kt_path)
 boxcox_lambda_vf   = joblib.load(lambda_vf_path)
 
 # 加载 TSN 目标分位数变换器
-qt_TSN_path       = "qt_TSN.pkl"
 qt_TSN             = joblib.load(qt_TSN_path)
-
 
 # ========== 2. Streamlit 页面配置 ==========
 st.set_page_config(layout="wide", page_title="Stacking 模型预测与 SHAP 可视化", page_icon="📊")
@@ -34,66 +33,50 @@ st.write("""
 通过输入特征值进行模型预测，并结合 SHAP 分析结果，了解特征对模型预测的贡献。
 """)
 
-# ========== 3. 侧边栏用户输入 ==========
+# ========== 3. 侧边栏用户输入（不限制小数位数） ==========
 st.sidebar.header("特征输入区域")
 st.sidebar.write("请输入特征值：")
-LCD      = st.sidebar.number_input("特征 LCD (范围: 6.03338-39.1106)", min_value=6.03,  max_value=39.11, value=8.33)
-Vf       = st.sidebar.number_input("特征 Vf (范围: 0.2574-0.9182)",   min_value=0.26,  max_value=0.92, value=0.57)
-GSA      = st.sidebar.number_input("特征 GSA (范围: 204.912-7061.42)", min_value=204.9, max_value=7061.4, value=701.88)
-Density  = st.sidebar.number_input("特征 Density (范围: 0.237838-2.86501)", min_value=0.24, max_value=2.87, value=1.51)
-Ktoluene = st.sidebar.number_input("特征 Ktoluene (范围: 0.0000274-28527.4)", min_value=0.00003, max_value=28527.4, value=0.0135)
+LCD      = st.sidebar.number_input("特征 LCD (范围: 6.03338-39.1106)", min_value=6.03338, max_value=39.1106, value=8.33119, format="%g")
+Vf       = st.sidebar.number_input("特征 Vf (范围: 0.2574-0.9182)",   min_value=0.2574,   max_value=0.9182,   value=0.5726,   format="%g")
+GSA      = st.sidebar.number_input("特征 GSA (范围: 204.912-7061.42)", min_value=204.912, max_value=7061.42, value=701.884, format="%g")
+Density  = st.sidebar.number_input("特征 Density (范围: 0.237838-2.86501)", min_value=0.237838, max_value=2.86501, value=1.51454, format="%g")
+Ktoluene = st.sidebar.number_input("特征 Ktoluene (范围: 0.0000274-28527.4)", min_value=0.0000274, max_value=28527.4, value=0.013545, format="%g")
 
 predict_button = st.sidebar.button("进行预测")
 
-# ========== 4. 预测逻辑（带预处理） ==========
+# ========== 4. 预测逻辑（带预处理 + 显示转换 + 反变换） ==========
 if predict_button:
     st.header("预测结果")
     try:
-        # ---- 4.1 按训练时同样方式做转换 ----
-        # QuantileTransformer 接受 2D array，形状 (n_samples,1)
-        lcd_q     = qt_lcd.transform(     np.array([[LCD]]) )
-        gsa_q     = qt_gsa.transform(     np.array([[GSA]]) )
-        density_q = qt_density.transform( np.array([[Density]]) )
-        ktol_q    = qt_ktol.transform(    np.array([[Ktoluene]]) )
+        # ----- 特征转换 -----
+        lcd_q     = qt_lcd.transform([[LCD]])[0, 0]
+        gsa_q     = qt_gsa.transform([[GSA]])[0, 0]
+        density_q = qt_density.transform([[Density]])[0, 0]
+        vf_bc     = boxcox(np.array([Vf]), lmbda=boxcox_lambda_vf)[0]
+        ktol_bc   = boxcox(np.array([Ktoluene]), lmbda=boxcox_lambda_kt)[0]
 
-        # Box–Cox 变换（scipy.stats.boxcox 仅返回 transformed array）
-        vf_bc = boxcox(np.array([Vf]), lmbda=boxcox_lambda_vf)
-
-        # ---- 4.2 显示转换前/后数值 ----
-        transformed_dict = {
-            "特征": ["LCD", "Vf", "GSA", "Density", "Ktoluene"],
-            "原始值": [LCD, Vf, GSA, Density, Ktoluene],
-            "转换后值": [
-                float(lcd_q[0, 0]),
-                float(vf_bc[0]),
-                float(gsa_q[0, 0]),
-                float(density_q[0, 0]),
-                float(ktol_q[0, 0])
-            ]
-        }
-        df_trans = pd.DataFrame(transformed_dict)
+        # ----- 显示输入特征原始 vs 转换后 -----
+        df_trans = pd.DataFrame({
+            "特征":      ["LCD", "Vf", "GSA", "Density", "Ktoluene"],
+            "原始值":    [LCD, Vf, GSA, Density, Ktoluene],
+            "转换后值": [lcd_q, vf_bc, gsa_q, density_q, ktol_bc]
+        })
         st.subheader("🔄 特征值转换对比")
         st.table(df_trans)
 
-        # ---- 4.3 拼接成模型输入，顺序必须与训练时一致 ----
-        # 假设训练时特征顺序是 [LCD, Vf, GSA, Density, Ktoluene]
-        X_user = np.concatenate(
-            [lcd_q, vf_bc.reshape(-1,1), gsa_q, density_q, ktol_q],
-            axis=1
-        )
+        # ----- 构造模型输入，顺序与训练一致 -----
+        X_user = df_trans["转换后值"].to_numpy().reshape(1, -1)
+        st.write("▶ 用于模型的 X_user：", X_user)
 
-        # ---- 4.4 模型预测（在 transformed 空间） ----
-        X_user = np.concatenate(
-            [lcd_q, vf_bc.reshape(-1, 1), gsa_q, density_q, ktol_q], axis=1
-        )
+        # ----- 模型预测（变换后 TSN） -----
         pred_trans = stacking_regressor.predict(X_user)[0]
-        st.subheader("📈 模型输出（分位数变换后 TSN）")
-        st.write(f"TSN_transformed = {pred_trans:.4f}")
+        st.subheader("📈 模型输出 (TSN_transformed)")
+        st.write(f"{pred_trans:.6f}")
 
-        # ---- 4.5 反变换回原始 TSN ----
+        # ----- 反变换回原始 TSN -----
         pred_orig = qt_TSN.inverse_transform([[pred_trans]])[0, 0]
-        st.subheader("🏷️ 预测结果（原始 TSN）")
-        st.success(f"TSN 原始值 = {pred_orig:.4f}")
+        st.subheader("🏷️ 预测原始 TSN")
+        st.success(f"{pred_orig:.6f}")
 
     except Exception as e:
         st.error(f"预测时发生错误：{e}")
