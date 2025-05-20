@@ -11,8 +11,8 @@ stacking_regressor    = joblib.load("stacking_model.pkl")
 qt_lcd                = joblib.load("qt_lcd.pkl")
 qt_gsa                = joblib.load("qt_GSA.pkl")
 qt_density            = joblib.load("qt_Density.pkl")
-boxcox_kt_transformer = joblib.load("lambda_Ktoluene.pkl")  # 你的 FixedBoxCoxTransformer 对象
-boxcox_lambda_vf      = float(joblib.load("lambda_vf.pkl"))  # 直接保存的 λ 值
+boxcox_lambda_kt   = joblib.load("lambda_Ktoluene,pkl")
+boxcox_lambda_vf   = joblib.load("lambda_vf,pkl")
 
 qt_TSN                = joblib.load("qt_TSN.pkl")
 
@@ -58,15 +58,9 @@ if predict_button:
         gsa_q     = qt_gsa.transform([[GSA]])[0, 0]
         density_q = qt_density.transform([[Density]])[0, 0]
 
-        # Vf: 单纯用 Box–Cox λ 值
-        vf_arr = np.array([[float(Vf)]], dtype=float)
-        # 由于只存了 λ，我们用 scipy.stats.boxcox
-        from scipy.stats import boxcox
-        vf_bc = boxcox(vf_arr.flatten(), lmbda=boxcox_lambda_vf)[0]
-
-        # Ktoluene: 用自定义 FixedBoxCoxTransformer
-        ktol_arr = np.array([[float(Ktoluene)]], dtype=float)
-        ktol_bc  = boxcox_kt_transformer.transform(ktol_arr)[0, 0]
+        # Box–Cox 变换（scipy.stats.boxcox 仅返回 transformed array）
+        vf_bc = boxcox(np.array([Vf]), lmbda=boxcox_lambda_vf)
+        ktol_bc = boxcox(np.array([Ktoluene]), lmbda=boxcox_lambda_kt)
 
         # ---- 4.2 显示输入特征原始 vs 转换后 ----
         df_trans = pd.DataFrame({
