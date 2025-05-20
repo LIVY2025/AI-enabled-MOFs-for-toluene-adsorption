@@ -6,7 +6,7 @@ import joblib
 from scipy.stats import boxcox
 import dill
 
-# ========== 2. 页面配置与简介 ==========
+# ========== 0. 页面配置与简介 ==========
 st.set_page_config(layout="wide", page_title="Stacking 模型预测与 SHAP 可视化", page_icon="📊")
 st.title("📊 Stacking 模型预测与 SHAP 可视化分析")
 
@@ -22,18 +22,24 @@ h1, h2, h3 {
     border-bottom: 2px solid #E0E0E0;
     padding-bottom: 4px;
 }
-/* 卡片样式（带 !important 强制覆盖） */
-.card {
-    background: white !important;
-    padding: 16px !important;
-    margin: 12px 0 !important;
-    border-radius: 8px !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+/* 卡片容器 */
+.my-card {
+  background: #fff;
+  padding: 16px;
+  margin: 16px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
-
-/* 表格居中 */
-.card table td, .card table th {
-    text-align: center !important;
+/* 卡片内部表格居中 */
+.my-card table {
+  margin: 0 auto;
+  border-collapse: collapse;
+}
+/* 表头、表格单元格居中 & 边框 */
+.my-card th, .my-card td {
+  text-align: center;
+  padding: 8px 12px;
+  border: 1px solid #eee;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -108,30 +114,41 @@ if predict_button:
     ktol_bc = boxcox(np.array([Ktoluene]), lmbda=boxcox_lambda_kt)
 
     # 4.2 显示特征原始 vs 转换后
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("🔄 特征数据预处理")
     df_trans = pd.DataFrame({
         "特征":      ["LCD", "Vf", "GSA", "Density", "Ktoluene"],
         "原始值":    [LCD, Vf, GSA, Density, Ktoluene],
         "转换值": [lcd_q, vf_bc, gsa_q, density_q, ktol_bc]
     })
-    st.table(df_trans)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # ---用 HTML+CSS 渲染卡片 & 表格 ---
+    html = df_trans.to_html(index=False)
+    st.markdown(f"""
+    <div class="my-card">
+      <h3>🔄 特征预处理对比</h3>
+      {html}
+    </div>
+    """, unsafe_allow_html=True)
 
     # 4.3 构造模型输入并显示
     X_user = df_trans["转换值"].to_numpy().reshape(1, -1)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("👉 用于模型的 X_user")
-    st.write(X_user)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="my-card">
+      <h3>👉 用于模型的 X_user</h3>
+      <pre>{X_user}</pre>
+    </div>
+    """, unsafe_allow_html=True)
 
     # 4.4 模型预测与反变换
     pred_trans = stacking_regressor.predict(X_user)[0]
-    pred_orig  = qt_TSN.inverse_transform([[pred_trans]])[0, 0]
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("📈 预测结果")
-    st.markdown(f"- **TSN_transformed**: {pred_trans:.6f}  \n- **原始 TSN**: {pred_orig:.6f}")
-    st.markdown('</div>', unsafe_allow_html=True)
+    pred_orig = qt_TSN.inverse_transform([[pred_trans]])[0, 0]
+    st.markdown(f"""
+    <div class="my-card">
+      <h3>📈 预测结果</h3>
+      <ul>
+        <li><b>TSN_transformed</b>: {pred_trans:.6f}</li>
+        <li><b>原始 TSN</b>: {pred_orig:.6f}</li>
+      </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ========== 5. SHAP 可视化部分（保持原样） ==========
 st.header("SHAP 可视化分析")
