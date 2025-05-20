@@ -22,6 +22,11 @@ qt_density         = joblib.load(qt_density_path)
 qt_ktol            = joblib.load(qt_ktol_path)
 boxcox_lambda_vf   = joblib.load(lambda_vf_path)
 
+# 加载 TSN 目标分位数变换器
+qt_TSN_path       = "qt_TSN.pkl"
+qt_TSN             = joblib.load(qt_TSN_path)
+
+
 # ========== 2. Streamlit 页面配置 ==========
 st.set_page_config(layout="wide", page_title="Stacking 模型预测与 SHAP 可视化", page_icon="📊")
 st.title("📊 Stacking 模型预测与 SHAP 可视化分析")
@@ -77,10 +82,18 @@ if predict_button:
             axis=1
         )
 
-        # ---- 4.4 预测并展示 ----
-        prediction = stacking_regressor.predict(X_user)[0]
-        st.subheader("📈 预测结果")
-        st.success(f"预测TSN = {prediction:.4f}")
+        # ---- 4.4 模型预测（在 transformed 空间） ----
+        X_user = np.concatenate(
+            [lcd_q, vf_bc.reshape(-1, 1), gsa_q, density_q, ktol_q], axis=1
+        )
+        pred_trans = stacking_regressor.predict(X_user)[0]
+        st.subheader("📈 模型输出（分位数变换后 TSN）")
+        st.write(f"TSN_transformed = {pred_trans:.4f}")
+
+        # ---- 4.5 反变换回原始 TSN ----
+        pred_orig = qt_TSN.inverse_transform([[pred_trans]])[0, 0]
+        st.subheader("🏷️ 预测结果（原始 TSN）")
+        st.success(f"TSN 原始值 = {pred_orig:.4f}")
 
     except Exception as e:
         st.error(f"预测时发生错误：{e}")
