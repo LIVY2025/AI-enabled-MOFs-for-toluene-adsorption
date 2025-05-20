@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from PIL import Image
+from scipy.stats import boxcox
 import joblib
 import dill
 
