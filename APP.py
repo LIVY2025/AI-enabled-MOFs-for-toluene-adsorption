@@ -11,7 +11,6 @@ stacking_regressor    = joblib.load("stacking_model.pkl")
 qt_lcd                = joblib.load("qt_lcd.pkl")
 qt_gsa                = joblib.load("qt_GSA.pkl")
 qt_density            = joblib.load("qt_Density.pkl")
-qt_ktol               = joblib.load("qt_Ktoluene.pkl")       # 如果你也用 QuantileTransformer 存过 Ktoluene，请改为对应文件名
 boxcox_kt_transformer = joblib.load("lambda_Ktoluene.pkl")  # 你的 FixedBoxCoxTransformer 对象
 boxcox_lambda_vf      = float(joblib.load("lambda_vf.pkl"))  # 直接保存的 λ 值
 
