@@ -13,6 +13,30 @@ st.title("📊 Stacking 模型预测与 SHAP 可视化分析")
 # ========== 0. 少量 CSS 美化 ==========
 st.markdown("""
 <style>
+/* 全局正文字体 */
+body, .streamlit-container {
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+}
+/* H1 标题 */
+h1 {
+  font-size: 32px !important;
+  margin-top: 24px;
+  margin-bottom: 8px;
+}
+/* H2 子标题 */
+h2 {
+  font-size: 24px !important;
+  margin-top: 20px;
+  margin-bottom: 6px;
+}
+/* H3 小标题 */
+h3 {
+  font-size: 20px !important;
+  margin-top: 16px;
+  margin-bottom: 4px;
+}
+h1 + p, h2 + p, h3 + p { margin-top:12px!important; }
 /* 背景色 */
 .reportview-container {
     background-color: #F9FAFB;
@@ -45,15 +69,26 @@ h1, h2, h3 {
 """, unsafe_allow_html=True)
 
 # ========== 1. 加载模型和预处理器 ==========
-stacking_regressor    = joblib.load("stacking_model.pkl")
+@st.cache_resource
+def load_all():
+    return {
+        "stack": joblib.load("stacking_model.pkl"),
+        "qt_lcd": joblib.load("qt_lcd.pkl"),
+        "qt_gsa": joblib.load("qt_GSA.pkl"),
+        "qt_density": joblib.load("qt_Density.pkl"),
+        "lambda_kt": joblib.load("lambda_Ktoluene.pkl"),
+        "lambda_vf": joblib.load("lambda_vf.pkl"),
+        "qt_TSN": joblib.load("qt_TSN.pkl"),
+    }
 
-qt_lcd                = joblib.load("qt_lcd.pkl")
-qt_gsa                = joblib.load("qt_GSA.pkl")
-qt_density            = joblib.load("qt_Density.pkl")
-boxcox_lambda_kt      = joblib.load("lambda_Ktoluene.pkl")
-boxcox_lambda_vf      = joblib.load("lambda_vf.pkl")
-
-qt_TSN                = joblib.load("qt_TSN.pkl")
+models = load_all()
+stacking_regressor = models["stack"]
+qt_lcd             = models["qt_lcd"]
+qt_gsa             = models["qt_gsa"]
+qt_density         = models["qt_density"]
+boxcox_lambda_kt   = models["lambda_kt"]
+boxcox_lambda_vf   = models["lambda_vf"]
+qt_TSN             = models["qt_TSN"]
 
 st.markdown("""
 欢迎使用 **MOF 材料甲苯吸附能力（TSN）** 预测与可解释性分析平台。  
@@ -123,17 +158,8 @@ if predict_button:
     html = df_trans.to_html(index=False)
     st.markdown(f"""
     <div class="my-card">
-      <h3>🔄 特征预处理对比</h3>
+      <h3>🔄 特征预处理</h3>
       {html}
-    </div>
-    """, unsafe_allow_html=True)
-
-    # 4.3 构造模型输入并显示
-    X_user = df_trans["转换值"].to_numpy().reshape(1, -1)
-    st.markdown(f"""
-    <div class="my-card">
-      <h3>👉 用于模型的 X_user</h3>
-      <pre>{X_user}</pre>
     </div>
     """, unsafe_allow_html=True)
 
