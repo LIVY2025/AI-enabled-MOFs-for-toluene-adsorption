@@ -11,8 +11,8 @@ stacking_regressor    = joblib.load("stacking_model.pkl")
 qt_lcd                = joblib.load("qt_lcd.pkl")
 qt_gsa                = joblib.load("qt_GSA.pkl")
 qt_density            = joblib.load("qt_Density.pkl")
-boxcox_lambda_kt   = joblib.load("lambda_Ktoluene,pkl")
-boxcox_lambda_vf   = joblib.load("lambda_vf,pkl")
+boxcox_lambda_kt   = joblib.load("lambda_Ktoluene.pkl")
+boxcox_lambda_vf   = joblib.load("lambda_vf.pkl")
 
 qt_TSN                = joblib.load("qt_TSN.pkl")
 
