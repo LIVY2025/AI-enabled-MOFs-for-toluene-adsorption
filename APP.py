@@ -7,12 +7,11 @@ from scipy.stats import boxcox
 import dill
 
 # ========== 1. 加载模型和预处理器 ==========
-
 model_path        = "stacking_model.pkl"
 qt_lcd_path       = "qt_lcd.pkl"
 qt_gsa_path       = "qt_GSA.pkl"
 qt_density_path   = "qt_Density.pkl"
-lambda_kt_path      = "lambda_Ktoluene.pkl"
+lambda_kt_path    = "lambda_Ktoluene.pkl"
 lambda_vf_path    = "lambda_vf.pkl"
 qt_TSN_path       = "qt_TSN.pkl"
 
@@ -22,8 +21,6 @@ qt_gsa             = joblib.load(qt_gsa_path)
 qt_density         = joblib.load(qt_density_path)
 boxcox_lambda_kt   = joblib.load(lambda_kt_path)
 boxcox_lambda_vf   = joblib.load(lambda_vf_path)
-
-# 加载 TSN 目标分位数变换器
 qt_TSN             = joblib.load(qt_TSN_path)
 
 # ========== 2. Streamlit 页面配置 ==========
@@ -33,15 +30,14 @@ st.write("""
 通过输入特征值进行模型预测，并结合 SHAP 分析结果，了解特征对模型预测的贡献。
 """)
 
-# ========== 3. 侧边栏用户输入（不限制小数位数） ==========
+# ========== 3. 侧边栏用户输入（显示完整小数精度） ==========
 st.sidebar.header("特征输入区域")
 st.sidebar.write("请输入特征值：")
 LCD      = st.sidebar.number_input("特征 LCD (范围: 6.03338-39.1106)", min_value=6.03338, max_value=39.1106, value=8.33119, format="%g")
 Vf       = st.sidebar.number_input("特征 Vf (范围: 0.2574-0.9182)",   min_value=0.2574,   max_value=0.9182,   value=0.5726,   format="%g")
 GSA      = st.sidebar.number_input("特征 GSA (范围: 204.912-7061.42)", min_value=204.912, max_value=7061.42, value=701.884, format="%g")
 Density  = st.sidebar.number_input("特征 Density (范围: 0.237838-2.86501)", min_value=0.237838, max_value=2.86501, value=1.51454, format="%g")
-Ktoluene = st.sidebar.number_input("特征 Ktoluene (范围: 0.0000274-28527.4)", min_value=0.0000274, max_value=28527.4, value=0.013545, format="%g")
-
+Ktoluene = st.sidebar.number_input("特征 Ktoluene (范围: 0.000027383-28527.4)", min_value=0.0000274, max_value=28527.4, value=0.013545, format="%g")
 predict_button = st.sidebar.button("进行预测")
 
 # ========== 4. 预测逻辑（带预处理 + 显示转换 + 反变换） ==========
@@ -49,11 +45,12 @@ if predict_button:
     st.header("预测结果")
     try:
         # ----- 特征转换 -----
-        lcd_q     = qt_lcd.transform([[LCD]])[0, 0]
-        gsa_q     = qt_gsa.transform([[GSA]])[0, 0]
-        density_q = qt_density.transform([[Density]])[0, 0]
-        vf_bc     = boxcox(np.array([Vf]), lmbda=boxcox_lambda_vf)[0]
-        ktol_bc   = boxcox(np.array([Ktoluene]), lmbda=boxcox_lambda_kt)[0]
+        lcd_q     = float(qt_lcd.transform([[LCD]])[0, 0])
+        gsa_q     = float(qt_gsa.transform([[GSA]])[0, 0])
+        density_q = float(qt_density.transform([[Density]])[0, 0])
+        # 强制转换为 float 类型，确保 boxcox 支持
+        vf_bc     = boxcox(np.array([float(Vf)], dtype=float), lmbda=boxcox_lambda_vf)[0]
+        ktol_bc   = boxcox(np.array([float(Ktoluene)], dtype=float), lmbda=boxcox_lambda_kt)[0]
 
         # ----- 显示输入特征原始 vs 转换后 -----
         df_trans = pd.DataFrame({
@@ -74,7 +71,7 @@ if predict_button:
         st.write(f"{pred_trans:.6f}")
 
         # ----- 反变换回原始 TSN -----
-        pred_orig = qt_TSN.inverse_transform([[pred_trans]])[0, 0]
+        pred_orig = float(qt_TSN.inverse_transform([[pred_trans]])[0, 0])
         st.subheader("🏷️ 预测原始 TSN")
         st.success(f"{pred_orig:.6f}")
 
