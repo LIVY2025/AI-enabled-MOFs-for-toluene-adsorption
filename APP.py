@@ -163,6 +163,8 @@ if predict_button:
     </div>
     """, unsafe_allow_html=True)
 
+    X_user = df_trans["转换值"].to_numpy().reshape(1, -1)
+
     # 4.4 模型预测与反变换
     pred_trans = stacking_regressor.predict(X_user)[0]
     pred_orig = qt_TSN.inverse_transform([[pred_trans]])[0, 0]
