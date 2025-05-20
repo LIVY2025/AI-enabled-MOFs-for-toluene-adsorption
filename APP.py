@@ -2,8 +2,8 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from PIL import Image
-from scipy.stats import boxcox
 import joblib
+from scipy.stats import boxcox
 import dill
 
 # ========== 1. 加载模型和预处理器 ==========
