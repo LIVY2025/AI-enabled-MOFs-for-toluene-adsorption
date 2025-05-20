@@ -22,13 +22,18 @@ h1, h2, h3 {
     border-bottom: 2px solid #E0E0E0;
     padding-bottom: 4px;
 }
-/* 卡片样式 */
+/* 卡片样式（带 !important 强制覆盖） */
 .card {
-    background: white;
-    padding: 16px;
-    margin: 12px 0;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    background: white !important;
+    padding: 16px !important;
+    margin: 12px 0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+}
+
+/* 表格居中 */
+.card table td, .card table th {
+    text-align: center !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -46,25 +51,28 @@ qt_TSN                = joblib.load("qt_TSN.pkl")
 
 st.markdown("""
 欢迎使用 **MOF 材料甲苯吸附能力（TSN）** 预测与可解释性分析平台。  
-- **模型说明**：基于 8 个基学习器和 MLP 元学习器的 Stacking 回归，测试集 R² 可达 0.882。  
+- **模型说明**：
+  基于 8 个基学习器和 MLP 元学习器的 Stacking 回归，测试集 R² 可达 0.882。  
 - **功能**：  
   1. 在线输入 5 个原始特征，实时获取预测结果。  
   2. 显示数据预处理（分位数/Box–Cox）前后对比。  
   3. 转换至原始 TSN，并展示 SHAP 特征贡献图。  
-- **使用步骤**：点击侧边栏填写特征 → “进行预测” → 查看结果与可解释性图示。
+- **使用步骤**：
+  点击侧边栏填写特征  →  “进行预测”  →  查看结果与可解释性图示。
 """)
 
 with st.expander("🔧 查看预测流程"):
     st.markdown("""
-1. 用户输入原始特征  
-2. 分位数/Box–Cox 预处理  
+1. 用户输入 MOF 原始特征值  
+2. 分位数/Box–Cox 预处理，以输入模型  
 3. Stacking 模型预测 (TSN_transformed)  
-4. 转换至原始 TSN  
-5. SHAP 分析各层模型特征贡献  
+4. TSN_transformed 转换至原始 TSN  
+5. SHAP 可视化分析  
     """)
 
 # ========== 3. 侧边栏：特征输入 ==========
 st.sidebar.header("特征输入区域")
+st.sidebar.write("请输入特征值：")
 LCD      = st.sidebar.number_input(
     "特征 LCD (6.03338–39.1106)", min_value=6.03338, max_value=39.1106,
     value=8.33119, format="%g"
@@ -125,33 +133,41 @@ if predict_button:
     st.markdown(f"- **TSN_transformed**: {pred_trans:.6f}  \n- **原始 TSN**: {pred_orig:.6f}")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ========== 5. SHAP 可视化 ==========
-st.header("🔍 SHAP 可视化分析")
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.subheader("基学习器")
-    try:
-        st.image(Image.open("summary_plot.png"), use_column_width=True)
-    except FileNotFoundError:
-        st.warning("未找到第一层基学习器的 SHAP 图像文件。")
-with col2:
-    st.subheader("元学习器")
-    try:
-        st.image(
-            Image.open("SHAP Contribution Analysis for the Meta-Learner in the Second Layer of Stacking Regressor.png"),
-            use_column_width=True
-        )
-    except FileNotFoundError:
-        st.warning("未找到第二层元学习器的 SHAP 图像文件。")
-with col3:
-    st.subheader("整体模型")
-    try:
-        st.image(
-            Image.open("Based on the overall feature contribution analysis of SHAP to the stacking model.png"),
-            use_column_width=True
-        )
-    except FileNotFoundError:
-        st.warning("未找到整体 Stacking 模型的 SHAP 图像文件。")
+# ========== 5. SHAP 可视化部分（保持原样） ==========
+st.header("SHAP 可视化分析")
+st.write("""
+以下图表展示了模型的 SHAP 分析结果，包括第一层基学习器、第二层元学习器以及整个 Stacking 模型的特征贡献。
+""")
+
+# 第一层基学习器 SHAP 可视化
+st.subheader("1. 第一层基学习器")
+st.write("基学习器（RandomForest、XGB、LGBM 等）的特征贡献分析。")
+first_layer_img = "summary_plot.png"
+try:
+    img1 = Image.open(first_layer_img)
+    st.image(img1, caption="第一层基学习器的 SHAP 贡献分析", use_column_width=True)
+except FileNotFoundError:
+    st.warning("未找到第一层基学习器的 SHAP 图像文件。")
+
+# 第二层元学习器 SHAP 可视化
+st.subheader("2. 第二层元学习器")
+st.write("元学习器（Linear Regression）的输入特征贡献分析。")
+meta_layer_img = "SHAP Contribution Analysis for the Meta-Learner in the Second Layer of Stacking Regressor.png"
+try:
+    img2 = Image.open(meta_layer_img)
+    st.image(img2, caption="第二层元学习器的 SHAP 贡献分析", use_column_width=True)
+except FileNotFoundError:
+    st.warning("未找到第二层元学习器的 SHAP 图像文件。")
+
+# 整体 Stacking 模型 SHAP 可视化
+st.subheader("3. 整体 Stacking 模型")
+st.write("整个 Stacking 模型的特征贡献分析。")
+overall_img = "Based on the overall feature contribution analysis of SHAP to the stacking model.png"
+try:
+    img3 = Image.open(overall_img)
+    st.image(img3, caption="整体 Stacking 模型的 SHAP 贡献分析", use_column_width=True)
+except FileNotFoundError:
+    st.warning("未找到整体 Stacking 模型的 SHAP 图像文件。")
 
 # ========== 6. 总结与联系 ==========
 st.markdown("---")
