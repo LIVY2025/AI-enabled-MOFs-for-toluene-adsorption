@@ -6,6 +6,10 @@ import joblib
 from scipy.stats import boxcox
 import dill
 
+# ========== 2. 页面配置与简介 ==========
+st.set_page_config(layout="wide", page_title="Stacking 模型预测与 SHAP 可视化", page_icon="📊")
+st.title("📊 Stacking 模型预测与 SHAP 可视化分析")
+
 # ========== 0. 少量 CSS 美化 ==========
 st.markdown("""
 <style>
@@ -39,10 +43,6 @@ boxcox_lambda_kt      = joblib.load("lambda_Ktoluene.pkl")
 boxcox_lambda_vf      = joblib.load("lambda_vf.pkl")
 
 qt_TSN                = joblib.load("qt_TSN.pkl")
-
-# ========== 2. 页面配置与简介 ==========
-st.set_page_config(layout="wide", page_title="Stacking 模型预测与 SHAP 可视化", page_icon="📊")
-st.title("📊 Stacking 模型预测与 SHAP 可视化分析")
 
 st.markdown("""
 欢迎使用 **MOF 材料甲苯吸附能力（TSN）** 预测与可解释性分析平台。  
